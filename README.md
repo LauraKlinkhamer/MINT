@@ -6,4 +6,5 @@ Initial analyses of the main study outcomes (primary outcome + majority of secon
 Presented here is code for data cleaning, analysis replication (R) and extensions of the analyses, including the analyses of the (f)MRI data. 
 
 For more details on the study, please see our OSF page https://osf.io/3a6fp/
+
 ClinicalTrials.gov Identifier: NCT04276727
