@@ -1,0 +1,109 @@
+---
+title: "Primary Endpoint Analyses "
+author: "Laura Klinkhamer"
+date: "2023-01-16"
+output:
+    rmdformats::readthedown:
+      toc_depth: 4
+---
+
+```{r setup, include=TRUE, message = FALSE, , warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "H:/MINT/Behavioural_Trial_Data/cleaned/MINT_data_analysis")
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(ggmosaic)
+library(RColorBrewer)
+```
+
+### Loading the data
+
+```{r include=TRUE, message = FALSE, warning = TRUE}
+setwd('H:/MINT/Behavioural_Trial_Data/cleaned/Data_with_old_IDs/')
+
+basic_information <- read_tsv('basic_information.tsv')
+BPI <- read_tsv('BPI.tsv')
+
+```
+
+
+### Primary outcome analysis
+
+```{r include=TRUE, message = FALSE, warning = TRUE}
+
+# Data ordered and proportion of differences test run to match the output of the ECTU statisician's report exactly
+
+responder_table <- basic_information %>% 
+  group_by(AllocatedTreatment) %>%
+  count(Improver_status_week6) %>%
+  pivot_wider(names_from = Improver_status_week6, values_from = n) %>%
+  select(AllocatedTreatment,  'Improver', 'Non-improver') %>%
+  na.omit() %>%
+  arrange(factor(AllocatedTreatment, levels= c('Placebo', 'Levomenthol'))) %>%
+  column_to_rownames(., var = 'AllocatedTreatment')
+
+responder_matrix <- as.matrix(responder_table)
+
+# The difference of proportions test 
+
+prop.test(responder_matrix, correct = FALSE)
+
+```
+
+Conclusion Primary Endpoint Analysis:
+
+Percentage of improvers in placebo group - percentage of improvers in levomenthol group:
+43.48 - 46.15 = -2.68
+95% CI [ -30.56, 25.21]
+
+There is no significant difference between treatment conditions regarding the proportion of improvers vs non-improvers, 
+based on the classification principle that total BPI score should have decreased at least 30% to classify a participant as an 'improver', Chi-Square(1, N=49) = 0.04, p = 0.851. 
+
+
+
+## Tables and figures
+
+```{r include=TRUE, message = FALSE, warning = FALSE}
+
+# Table with improver/non-improver counts
+
+transpose <- t(responder_matrix)
+
+kable(transpose) %>% 
+  kable_styling(bootstrap_options = 'hover', 
+                html_font = 'helvetica',
+                font_size = '16',
+                full_width = FALSE)
+
+
+# Mosaic plot
+
+basic_information_adapted <- basic_information %>%
+  mutate(Improver_status_week6 = fct_relevel(Improver_status_week6, 'Non-improver', 'Improver'),
+         AllocatedTreatment = factor(AllocatedTreatment, levels= c('Placebo', 'Levomenthol')))
+
+mosaic_plot <- ggplot(data = basic_information_adapted) +
+geom_mosaic(aes(x = product(AllocatedTreatment), fill = Improver_status_week6), na.rm=TRUE) +
+labs(fill = 'Improver status at week 6') +
+  scale_fill_manual(
+    values = c('#D95F02','#1B9E77'), # Colours chosen from the colourblind friendly palette RColorBrewer::brewer.pal(8, 'Dark2')
+    guide = guide_legend(reverse = TRUE)) + 
+  theme_classic() +
+    theme(legend.title = element_text(size = 12),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_text(size = 11.5, colour = 'black'),  
+          axis.text.y = element_text(size = 11.5, colour = 'black'),
+          legend.text = element_text(size = 11.5, colour = 'black')  
+          ) 
+
+mosaic_plot 
+
+ggsave(filename="mosaic_plot_primary_outcome.png", plot= mosaic_plot, device="png", path='C:/Users/s1551005/OneDrive - University of Edinburgh/PhD Edinburgh/Writing/Figures/Behavioural_data', height=3.75, width=6.5, units="in", dpi = 700)
+
+
+```
+
